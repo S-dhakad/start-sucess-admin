@@ -21,8 +21,8 @@ export default function AdminBroadcast() {
   const [success, setSuccess] = useState<string | null>(null);
 
   const handleSend = async () => {
-    if (!draft.title.trim() || !draft.body.trim()) {
-      setError("Title and message body are required.");
+    if (!draft.title.trim()) {
+      setError("Notification title is required.");
       return;
     }
     
@@ -34,7 +34,12 @@ export default function AdminBroadcast() {
     setError(null);
     setSuccess(null);
     try {
-      await api.admin.broadcastSend(draft);
+      const payload = {
+        title: draft.title.trim(),
+        body: draft.body.trim() || draft.title.trim(),
+        type: draft.type,
+      };
+      await api.admin.broadcastSend(payload);
       setSuccess("Broadcast message sent successfully to all users.");
       setDraft({ title: "", body: "", type: "system" });
     } catch (e) {
@@ -83,11 +88,13 @@ export default function AdminBroadcast() {
             </div>
 
             <div>
-              <Label>Message Body</Label>
+              <Label>
+                Message Body <span className="text-xs font-normal text-gray-400 dark:text-gray-500">(Optional)</span>
+              </Label>
               <TextArea
                 value={draft.body}
                 onChange={(val) => setDraft({ ...draft, body: val })}
-                placeholder="Type your message here..."
+                placeholder="Type your message here (optional, defaults to title if left empty)..."
                 rows={6}
               />
             </div>

@@ -287,7 +287,7 @@ export const api = {
     settingsGet: () => instance.get("/settings/public"),
     settingsUpdate: (body: any) => instance.patch("/settings/admin", body),
     /** Notifications / Broadcast */
-    broadcastSend: (body: { title: string; body: string; type: string }) =>
+    broadcastSend: (body: { title: string; body?: string; type: string }) =>
       instance.post("/notifications/broadcast", body),
     /** Referral Tree */
     userReferralTree: (userId: string) =>
