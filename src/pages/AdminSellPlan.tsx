@@ -156,9 +156,15 @@ export default function AdminSellPlan() {
 
     setLoading(true);
     try {
+      const cleanEmail = email
+        .trim()
+        .toLowerCase()
+        .replace(/^(email|mail|e-mail)\s*[:=\-–—\s]+/i, "")
+        .replace(/^[-–—\s]+/, "");
+
       const result = (await api.admin.planSaleCreateOffline({
         fullName: fullName.trim(),
-        email: email.trim(),
+        email: cleanEmail,
         dateOfBirth: dob,
         contactNumber: contact.trim(),
         promoCode: code,
