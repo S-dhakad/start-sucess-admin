@@ -9,6 +9,7 @@ import TextArea from "../components/form/input/TextArea";
 import Button from "../components/ui/button/Button";
 import Alert from "../components/ui/alert/Alert";
 import { api } from "../lib/api";
+import { sanitizeEmail } from "../lib/email";
 
 type Plan = { _id: string; name: string; price: number; promoPrice?: number };
 
@@ -156,15 +157,9 @@ export default function AdminSellPlan() {
 
     setLoading(true);
     try {
-      const cleanEmail = email
-        .trim()
-        .toLowerCase()
-        .replace(/^(email|mail|e-mail)\s*[:=\-–—\s]+/i, "")
-        .replace(/^[-–—\s]+/, "");
-
       const result = (await api.admin.planSaleCreateOffline({
         fullName: fullName.trim(),
-        email: cleanEmail,
+        email: sanitizeEmail(email),
         dateOfBirth: dob,
         contactNumber: contact.trim(),
         promoCode: code,
