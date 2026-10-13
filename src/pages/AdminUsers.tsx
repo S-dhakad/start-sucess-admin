@@ -121,17 +121,26 @@ export default function AdminUsers() {
     }
   };
 
+  const openPlanModal = (user: any) => {
+    setSelectedUser(user);
+    setSelectedPlanId(
+      user.planId?._id || (typeof user.planId === "string" ? user.planId : "")
+    );
+    setUpgradeError(null);
+    setIsUpgradeModalOpen(true);
+  };
+
   const handleUpgradePlan = async () => {
-    if (!selectedUser?._id || !selectedPlanId) return;
+    if (!selectedUser?._id) return;
     setUpgradingPlan(true);
     setUpgradeError(null);
     try {
-      const updated = await api.admin.userUpgradePlan(selectedUser._id, selectedPlanId);
+      const updated = await api.admin.userUpgradePlan(selectedUser._id, selectedPlanId || "none");
       setSelectedUser(updated);
       setUsers((prev) => prev.map((u) => (u._id === selectedUser._id ? updated : u)));
       setIsUpgradeModalOpen(false);
     } catch (e) {
-      setUpgradeError(e instanceof Error ? e.message : "Failed to upgrade plan");
+      setUpgradeError(e instanceof Error ? e.message : "Failed to update plan");
     } finally {
       setUpgradingPlan(false);
     }
@@ -227,11 +236,36 @@ export default function AdminUsers() {
       },
       {
         header: "Plan",
-        accessor: (u: any) => (
-          <span className="text-xs font-semibold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-500/10 px-2 py-0.5 rounded-full border border-brand-200 dark:border-brand-500/20">
-            {u.planId?.name || (typeof u.planId === "string" ? "Plan assigned" : "No Plan")}
-          </span>
-        ),
+        accessor: (u: any) => {
+          const planName =
+            u.planId?.name || (typeof u.planId === "string" ? "Plan assigned" : "No Plan");
+          return (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                openPlanModal(u);
+              }}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-500/10 px-2.5 py-1 rounded-full border border-brand-200 dark:border-brand-500/20 hover:bg-brand-100 dark:hover:bg-brand-500/20 transition-colors cursor-pointer group"
+              title="Click to update plan"
+            >
+              <span>{planName}</span>
+              <svg
+                className="size-3 text-brand-400 group-hover:text-brand-600 dark:group-hover:text-brand-300"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                />
+              </svg>
+            </button>
+          );
+        },
       },
       {
         header: "Password",
@@ -284,9 +318,19 @@ export default function AdminUsers() {
         header: "Actions",
         align: "right" as const,
         accessor: (u: any) => (
-          <Button variant="outline" size="sm" onClick={() => viewDetails(u)}>
-            View
-          </Button>
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openPlanModal(u)}
+              className="text-xs text-brand-600 dark:text-brand-400 border-brand-200 dark:border-brand-500/30 hover:bg-brand-50 dark:hover:bg-brand-500/10"
+            >
+              Update Plan
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => viewDetails(u)}>
+              View
+            </Button>
+          </div>
         ),
       },
     ],
@@ -371,18 +415,10 @@ export default function AdminUsers() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => {
-                              setSelectedPlanId(
-                                selectedUser.planId?._id ||
-                                  (typeof selectedUser.planId === "string"
-                                    ? selectedUser.planId
-                                    : "")
-                              );
-                              setUpgradeError(null);
-                              setIsUpgradeModalOpen(true);
-                            }}
+                            onClick={() => openPlanModal(selectedUser)}
+                            className="text-xs text-brand-600 dark:text-brand-400 border-brand-200 dark:border-brand-500/30 hover:bg-brand-50"
                           >
-                            Upgrade
+                            Update Plan
                           </Button>
                         </div>
                       </div>
@@ -634,38 +670,53 @@ export default function AdminUsers() {
         </div>
       </Modal>
 
-      {/* Upgrade Plan Modal */}
+      {/* Update User Plan Modal */}
       <Modal
         isOpen={isUpgradeModalOpen}
         onClose={() => setIsUpgradeModalOpen(false)}
         className="max-w-md w-full p-6 m-4"
       >
         <h3 className="mb-2 text-lg font-semibold text-gray-800 dark:text-white">
-          Upgrade User Plan
+          Update User Plan
         </h3>
         <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-          Select a new plan for <strong>{selectedUser?.name}</strong>.
+          Assign, upgrade or change membership plan for{" "}
+          <strong className="text-gray-900 dark:text-white">{selectedUser?.name}</strong>{" "}
+          ({selectedUser?.email}).
         </p>
 
         {upgradeError && (
           <Alert variant="error" title="Error" message={upgradeError} className="mb-4" />
         )}
 
-        <div className="mb-6 space-y-2">
-          <Label>Target Plan</Label>
-          <select
-            value={selectedPlanId}
-            onChange={(e) => setSelectedPlanId(e.target.value)}
-            disabled={upgradingPlan}
-            className="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-brand-500 focus:outline-hidden"
-          >
-            <option value="">-- Select a Plan --</option>
-            {plans.map((p) => (
-              <option key={p._id} value={p._id}>
-                {p.name} (Tier {p.tier ?? "-"}, ₹{p.price?.toLocaleString?.() ?? p.price})
-              </option>
-            ))}
-          </select>
+        <div className="mb-6 space-y-3">
+          <div className="rounded-lg bg-gray-50 dark:bg-gray-800/60 p-3 text-xs text-gray-600 dark:text-gray-300">
+            <span className="font-medium text-gray-500 dark:text-gray-400">Current Plan: </span>
+            <span className="font-semibold text-brand-600 dark:text-brand-400">
+              {selectedUser?.planId?.name ||
+                (typeof selectedUser?.planId === "string" ? "Plan assigned" : "No Plan")}
+            </span>
+          </div>
+
+          <div>
+            <Label>Select New Plan</Label>
+            <select
+              value={selectedPlanId}
+              onChange={(e) => setSelectedPlanId(e.target.value)}
+              disabled={upgradingPlan}
+              className="h-11 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-brand-500 focus:outline-hidden"
+            >
+              <option value="">-- Remove Plan (No Plan) --</option>
+              {plans.map((p) => (
+                <option key={p._id} value={p._id}>
+                  {p.name} (Tier {p.tier ?? "-"}, ₹{p.price?.toLocaleString?.() ?? p.price})
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="text-xs text-gray-500">
+            Updating the plan will immediately give the user access to all courses in the selected plan.
+          </p>
         </div>
 
         <div className="flex justify-end gap-2">
@@ -677,10 +728,10 @@ export default function AdminUsers() {
             Cancel
           </Button>
           <Button
-            disabled={upgradingPlan || !selectedPlanId}
+            disabled={upgradingPlan}
             onClick={() => void handleUpgradePlan()}
           >
-            {upgradingPlan ? "Upgrading..." : "Confirm Upgrade"}
+            {upgradingPlan ? "Saving..." : "Save Plan"}
           </Button>
         </div>
       </Modal>
