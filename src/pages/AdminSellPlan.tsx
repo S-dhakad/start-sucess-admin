@@ -325,7 +325,13 @@ export default function AdminSellPlan() {
                 </div>
                 <div>
                   <Label>Date of birth *</Label>
-                  <Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} required />
+                  <Input
+                    type="date"
+                    value={dob}
+                    onChange={(e) => setDob(e.target.value)}
+                    max={new Date().toISOString().split("T")[0]}
+                    required
+                  />
                 </div>
                 <div>
                   <Label>Contact number *</Label>
